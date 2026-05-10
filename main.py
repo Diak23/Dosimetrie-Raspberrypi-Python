@@ -1,7 +1,5 @@
-import time
+from acquisition.capteur import lecture_capteur
 
 print("Démarrage du système TEMPO")
 
-while True:
-    print("Mesure en cours...")
-    time.sleep(1)
+lecture_capteur()
