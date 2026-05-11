@@ -1,0 +1,615 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{geometry}
+\usepackage{graphicx}
+\geometry{margin=2.5cm}
+\usepackage{xcolor}
+\usepackage{float}
+%\usepackage{array}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\title{Sujet de projet : Étude et réalisation d’un capteur d’onde électromagnétique}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+\section{Problématique}
+Le projet \textbf{TEMPO} (Temps d'Exposition aux ondes électroMagnétiques, Paramètres et Observation) vise à combler une lacune majeure des dispositifs actuels de mesure des ondes électromagnétiques.
+
+\section*{A. Analyse de la Problématique}
+
+La problématique centrale peut être résumée par la question suivante : 
+\begin{center}
+    \textcolor{blue}{\textit{\textbf{Comment quantifier l'impact réel d'une onde sur un sujet en tenant compte non seulement de sa puissance, mais surtout de la durée d'exposition ?}}}
+\end{center}
+
+\begin{itemize}
+    \item \textbf{Sélectivité fréquentielle :} Contrairement aux appareils ``large bande'' qui font une mesure globale, TEMPO sépare les signaux en deux banques stratégiques : 800-900 MHz (GSM/IoT) et 1,8-2,6 GHz (Wi-Fi/4G/5G).\\
+    
+    \item \textbf{Dimension Temporelle :} L'innovation réside dans l'intégration du temps. Le système ne mesure pas seulement une valeur instantanée $E$ (V/m), mais calcule une exposition cumulée sur une période $T$.\\
+    
+    \item \textbf{Portabilité et Ergonomie :} Développer un outil hybride, compact et capable d'enregistrer des données sur le long terme pour le projet HUT.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|p{3cm}|p{4cm}|p{3cm}|p{5cm}|}
+\hline
+\textbf{Bloc du système} & \textbf{Fonction principale} & \textbf{Composant utilisé} & \textbf{Caractéristiques \;techniques essentielles} \\
+\hline
+
+Antenne (868 MHz) & Capter les ondes électromagnétiques & Antenne 868 MHz & Fréquence centrée : 868 MHz ; conversion onde EM $\rightarrow$ signal RF \\
+\hline
+
+Antenne (2,45 GHz) & Capter les ondes électromagnétiques & Antenne 2,45 GHz & Fréquence centrée : 2,45 GHz ; utilisée pour WiFi/Bluetooth \\
+\hline
+
+Amplificateur & Amplifier les signaux RF faibles & ZKL-33ULN-S+ & Bande : 0,4 -- 3 GHz ; Gain $\approx$ 35 dB (0,9 GHz) ; Alimentation : 5 V \\
+\hline
+
+Filtre (voie 868 MHz) & Sélectionner la bande utile & BPF-A950+ & Passe-bande : 700 -- 1200 MHz ; fréquence centrale : 950 MHz ; rejet des parasites \\
+\hline
+
+Filtre (voie 2,45 GHz) & Sélectionner la bande utile & CBP-2250A+ & Passe-bande : 2000 -- 2500 MHz ; adapté à 2,45 GHz \\
+\hline
+
+Détecteur RF & Convertir RF $\rightarrow$ tension DC & ZX47-40+ & Bande : 10 MHz -- 8 GHz ; dynamique : jusqu'à -40 dBm ; sortie analogique DC \\
+\hline
+
+Microcontrôleur & Traitement et conversion numérique & Arduino / Raspberry & Lecture ADC ; conversion tension $\rightarrow$ puissance (dBm) \\
+\hline
+
+Affichage & Visualisation des résultats & LCD / écran / PC & Affichage du niveau RF ou de l’exposition \\
+\hline
+
+Alimentation & Fournir l’énergie au système & Alimentation 5 V & Tension stable ; faible bruit ; alimentation des circuits RF \\
+\hline
+
+\end{tabular}
+\caption{Correspondance des blocs fonctionnels du détecteur RF et des composants utilisés}
+\end{table}
+
+
+
+
+\newpage
+
+\section{Ondes électromagnétiques}
+
+\subsection{Définition d'une onde électromagnétique}
+
+Une \textbf{onde électromagnétique} est une forme de propagation de l’énergie dans l’espace, pouvant être décrite selon deux approches complémentaires :
+
+\begin{itemize}
+    \item une approche corpusculaire, dans laquelle le rayonnement est constitué de photons ;
+    \item une approche ondulatoire, où il est représenté comme une onde électromagnétique.
+\end{itemize}
+
+
+Une onde électromagnétique se manifeste par la propagation simultanée d’un \textbf{champ électrique} et d’un \textbf{champ magnétique}, perpendiculaires entre eux et à la direction de propagation.
+\begin{figure}[H]
+    \centering
+   \includegraphics[width=0.5\linewidth]{IMAGE/onde_electromagnetique.png}
+    \caption{Schéma représentant le chamm électrique et le champ magnétique résultant d'une onde électromagnétique}
+    \label{fig:onde_electromagnetique.png}
+\end{figure}
+
+
+\subsection{Équation d'une onde électromagnétique}
+
+Une onde électromagnétique plane peut être décrite par une fonction sinusoïdale dépendant du temps et de l’espace.
+
+Le champ électrique s’écrit :
+
+\begin{equation}
+E(x,t) = E_0 \cos(\omega t - kx)
+\end{equation}
+
+Le champ magnétique associé est donné par :
+
+\begin{equation}
+B(x,t) = B_0 \cos(\omega t - kx)
+\end{equation}
+
+où :
+\begin{itemize}
+    \item $E_0$ et $B_0$ sont les amplitudes des champs ;
+    \item $\omega$ est la pulsation ($\omega = 2\pi f$) ;
+    \item $k$ est le nombre d’onde ($k = \frac{2\pi}{\lambda}$) ;
+    \item $x$ est la position ;
+    \item $t$ est le temps.
+\end{itemize}
+
+\subsection{Caractéristiques d'une onde électromagnétique}
+
+Une onde électromagnétique est caractérisée par :
+
+\begin{itemize}
+    \item sa longueur d’onde $\lambda$ (exprimée en mètres) ;
+    \item sa fréquence \textit{f} (exprimée en hertz).
+\end{itemize}
+
+Ces deux grandeurs sont liées par la relation :
+
+\begin{equation}
+c = \frac{\omega}{k} = \lambda f
+\end{equation}
+où $c$ représente la vitesse de la lumière dans le vide ($c \approx 3 \times 10^8$ m/s).
+
+\subsection{Les différents types d'ondes électromagnétiques}
+
+Les ondes électromagnétiques sont classées selon leur fréquence ou leur longueur d’onde en plusieurs grandes familles :
+
+\begin{figure}[H]
+\centering
+
+\begin{minipage}{0.4\textwidth}
+\begin{itemize}
+    \item les ondes hertziennes (ondes radio ou radiofréquences)
+    \item les ondes infrarouges
+    \item la lumière visible
+    \item le rayonnement ultraviolet
+    \item les rayons X
+    \item les rayons $\gamma$ (gamma)
+\end{itemize}
+\end{minipage}
+\hfill
+\begin{minipage}{0.55\textwidth}
+\centering
+\includegraphics[width=\linewidth]{IMAGE/Types_OEM.png}
+%\caption{Types d'ondes électromagnétiques}
+\label{fig:types_oem}
+\end{minipage}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\linewidth]{IMAGE/representation_oem_frequnce.png}
+    \caption{Schéma de représentation des ondes électromagnétiques en fonction de la longueur d'onde et de la fréquence}
+    \label{fig:representation_oem_frequnce}
+\end{figure}
+
+\subsection{Ondes hertziennes et bandes de fréquences}
+
+Les ondes hertziennes couvrent la gamme de fréquences allant de 0 à 300 GHz. Elles sont subdivisées en différentes bandes de fréquences comme présenté dans le tableau suivant :
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{Bande} & \textbf{Fréquence} & \textbf{Longueur d’onde} & \textbf{Applications} \\
+\hline
+ELF & 3 -- 30 Hz & 10 000 -- 100 000 km & Ondes naturelles, cerveau \\
+SLF & 30 -- 300 Hz & 1 000 -- 10 000 km & Lignes électriques \\
+ULF & 300 Hz -- 3 kHz & 100 -- 1 000 km & Télécommunications \\
+VLF & 3 -- 30 kHz & 10 -- 100 km & Navigation, CPL \\
+LF & 30 -- 300 kHz & 1 -- 10 km & Radiodiffusion \\
+MF & 300 kHz -- 3 MHz & 100 m -- 1 km & Radio AM \\
+HF & 3 -- 30 MHz & 10 -- 100 m & Communications radio \\
+VHF & 30 -- 300 MHz & 1 -- 10 m & FM, TV \\
+UHF & 300 MHz -- 3 GHz & 10 cm -- 1 m & Wi-Fi, 4G, 5G \\
+SHF & 3 -- 30 GHz & 1 -- 10 cm & Radar, satellite \\
+EHF & 30 -- 300 GHz & 1 mm -- 1 cm & 5G avancée, radar \\
+\hline
+\end{tabular}
+\caption{Bandes de fréquences des ondes hertziennes}
+\end{table}
+
+\subsection{Mesures en diagnostic électromagnétique}
+
+Dans le cadre des diagnostics électromagnétiques, les mesures concernent principalement les ondes hertziennes. Ces ondes incluent notamment :
+
+\begin{itemize}
+    \item les réseaux Wi-Fi ;
+    \item la téléphonie mobile (2G, 3G, 4G, 5G) ;
+    \item les micro-ondes ;
+    \item les lignes électriques.
+\end{itemize}
+
+\subsection{Rayonnements ionisants et non ionisants}
+
+Les ondes électromagnétiques peuvent être classées en deux catégories :
+
+\begin{itemize}
+    \item les rayonnements non ionisants (ondes radio, micro-ondes, infrarouge, visible) ;
+    \item les rayonnements ionisants (ultraviolets, rayons X, rayons $\gamma$).
+\end{itemize}
+
+Un rayonnement ionisant est capable d’arracher des électrons aux atomes, produisant ainsi des ions. Ce type de rayonnement peut être dangereux pour les organismes vivants à forte dose.
+
+La limite entre ces deux types de rayonnements se situe autour de $849$~THz.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{IMAGE/Rayonnement_non_ionisant.png}
+    \caption{Rayonnements ionisants et non- ionisants}
+    \label{fig:Rayonnement_non_ionisant}
+\end{figure}
+
+\subsection{Effets sur la santé}
+
+Selon l’Organisation Mondiale de la Santé (OMS), les ondes radiofréquences sont classées comme « potentiellement cancérogènes pour l’homme ». Certaines études suggèrent un lien entre une exposition prolongée (par exemple liée à l’usage intensif du téléphone portable) et certains risques pour la santé.
+
+Certaines personnes peuvent également présenter une sensibilité aux champs électromagnétiques (électrosensibilité), se manifestant par des symptômes tels que :
+
+\begin{itemize}
+    \item Maux de tête , troubles du sommeil , fatigue etc...
+\end{itemize}
+
+\section{Propagation des ondes électromagnétiques}
+
+La propagation des ondes électromagnétiques repose sur plusieurs phénomènes physiques tels que la réflexion, la réfraction, la diffraction, la diffusion et la dispersion. Ces phénomènes dépendent à la fois des bandes de fréquences utilisées et des propriétés physico-chimiques du milieu de propagation.
+
+\subsection{Grandeurs physiques fondamentales}
+
+Les principales grandeurs physiques intervenant dans la propagation des ondes électromagnétiques sont :
+
+\begin{itemize}
+    \item \textbf{Indice de réfraction ($n$)} : dépend de la permittivité ($\varepsilon$) et de la perméabilité ($\mu$) du milieu ;
+    
+    \item \textbf{Champ électrique ($\vec{E}$)} : généré par la présence de charges électriques, il est responsable de l'excitation des antennes filaires ;
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{geometry}
+\usepackage{graphicx}
+\geometry{margin=2.5cm}
+\usepackage{xcolor}
+\usepackage{float}
+%\usepackage{array}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\title{Sujet de projet : Étude et réalisation d’un capteur d’onde électromagnétique}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+\section{Problématique}
+Le projet \textbf{TEMPO} (Temps d'Exposition aux ondes électroMagnétiques, Paramètres et Observation) vise à combler une lacune majeure des dispositifs actuels de mesure des ondes électromagnétiques.
+
+\section*{A. Analyse de la Problématique}
+
+La problématique centrale peut être résumée par la question suivante : 
+\begin{center}
+    \textcolor{blue}{\textit{\textbf{Comment quantifier l'impact réel d'une onde sur un sujet en tenant compte non seulement de sa puissance, mais surtout de la durée d'exposition ?}}}
+\end{center}
+
+\begin{itemize}
+    \item \textbf{Sélectivité fréquentielle :} Contrairement aux appareils ``large bande'' qui font une mesure globale, TEMPO sépare les signaux en deux banques stratégiques : 800-900 MHz (GSM/IoT) et 1,8-2,6 GHz (Wi-Fi/4G/5G).\\
+    
+    \item \textbf{Dimension Temporelle :} L'innovation réside dans l'intégration du temps. Le système ne mesure pas seulement une valeur instantanée $E$ (V/m), mais calcule une exposition cumulée sur une période $T$.\\
+    
+    \item \textbf{Portabilité et Ergonomie :} Développer un outil hybride, compact et capable d'enregistrer des données sur le long terme pour le projet HUT.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|p{3cm}|p{4cm}|p{3cm}|p{5cm}|}
+\hline
+\textbf{Bloc du système} & \textbf{Fonction principale} & \textbf{Composant utilisé} & \textbf{Caractéristiques \;techniques essentielles} \\
+\hline
+
+Antenne (868 MHz) & Capter les ondes électromagnétiques & Antenne 868 MHz & Fréquence centrée : 868 MHz ; conversion onde EM $\rightarrow$ signal RF \\
+\hline
+
+Antenne (2,45 GHz) & Capter les ondes électromagnétiques & Antenne 2,45 GHz & Fréquence centrée : 2,45 GHz ; utilisée pour WiFi/Bluetooth \\
+\hline
+
+Amplificateur & Amplifier les signaux RF faibles & ZKL-33ULN-S+ & Bande : 0,4 -- 3 GHz ; Gain $\approx$ 35 dB (0,9 GHz) ; Alimentation : 5 V \\
+\hline
+
+Filtre (voie 868 MHz) & Sélectionner la bande utile & BPF-A950+ & Passe-bande : 700 -- 1200 MHz ; fréquence centrale : 950 MHz ; rejet des parasites \\
+\hline
+
+Filtre (voie 2,45 GHz) & Sélectionner la bande utile & CBP-2250A+ & Passe-bande : 2000 -- 2500 MHz ; adapté à 2,45 GHz \\
+\hline
+
+Détecteur RF & Convertir RF $\rightarrow$ tension DC & ZX47-40+ & Bande : 10 MHz -- 8 GHz ; dynamique : jusqu'à -40 dBm ; sortie analogique DC \\
+\hline
+
+Microcontrôleur & Traitement et conversion numérique & Arduino / Raspberry & Lecture ADC ; conversion tension $\rightarrow$ puissance (dBm) \\
+\hline
+
+Affichage & Visualisation des résultats & LCD / écran / PC & Affichage du niveau RF ou de l’exposition \\
+\hline
+
+Alimentation & Fournir l’énergie au système & Alimentation 5 V & Tension stable ; faible bruit ; alimentation des circuits RF \\
+\hline
+
+\end{tabular}
+\caption{Correspondance des blocs fonctionnels du détecteur RF et des composants utilisés}
+\end{table}
+
+
+
+
+\newpage
+
+\section{Ondes électromagnétiques}
+
+\subsection{Définition d'une onde électromagnétique}
+
+Une \textbf{onde électromagnétique} est une forme de propagation de l’énergie dans l’espace, pouvant être décrite selon deux approches complémentaires :
+
+\begin{itemize}
+    \item une approche corpusculaire, dans laquelle le rayonnement est constitué de photons ;
+    \item une approche ondulatoire, où il est représenté comme une onde électromagnétique.
+\end{itemize}
+
+
+Une onde électromagnétique se manifeste par la propagation simultanée d’un \textbf{champ électrique} et d’un \textbf{champ magnétique}, perpendiculaires entre eux et à la direction de propagation.
+\begin{figure}[H]
+    \centering
+   \includegraphics[width=0.5\linewidth]{IMAGE/onde_electromagnetique.png}
+    \caption{Schéma représentant le chamm électrique et le champ magnétique résultant d'une onde électromagnétique}
+    \label{fig:onde_electromagnetique.png}
+\end{figure}
+
+
+\subsection{Équation d'une onde électromagnétique}
+
+Une onde électromagnétique plane peut être décrite par une fonction sinusoïdale dépendant du temps et de l’espace.
+
+Le champ électrique s’écrit :
+
+\begin{equation}
+E(x,t) = E_0 \cos(\omega t - kx)
+\end{equation}
+
+Le champ magnétique associé est donné par :
+
+\begin{equation}
+B(x,t) = B_0 \cos(\omega t - kx)
+\end{equation}
+
+où :
+\begin{itemize}
+    \item $E_0$ et $B_0$ sont les amplitudes des champs ;
+    \item $\omega$ est la pulsation ($\omega = 2\pi f$) ;
+    \item $k$ est le nombre d’onde ($k = \frac{2\pi}{\lambda}$) ;
+    \item $x$ est la position ;
+    \item $t$ est le temps.
+\end{itemize}
+
+\subsection{Caractéristiques d'une onde électromagnétique}
+
+Une onde électromagnétique est caractérisée par :
+
+\begin{itemize}
+    \item sa longueur d’onde $\lambda$ (exprimée en mètres) ;
+    \item sa fréquence \textit{f} (exprimée en hertz).
+\end{itemize}
+
+Ces deux grandeurs sont liées par la relation :
+
+\begin{equation}
+c = \frac{\omega}{k} = \lambda f
+\end{equation}
+où $c$ représente la vitesse de la lumière dans le vide ($c \approx 3 \times 10^8$ m/s).
+
+\subsection{Les différents types d'ondes électromagnétiques}
+
+Les ondes électromagnétiques sont classées selon leur fréquence ou leur longueur d’onde en plusieurs grandes familles :
+
+\begin{figure}[H]
+\centering
+
+\begin{minipage}{0.4\textwidth}
+\begin{itemize}
+    \item les ondes hertziennes (ondes radio ou radiofréquences)
+    \item les ondes infrarouges
+    \item la lumière visible
+    \item le rayonnement ultraviolet
+    \item les rayons X
+    \item les rayons $\gamma$ (gamma)
+\end{itemize}
+\end{minipage}
+\hfill
+\begin{minipage}{0.55\textwidth}
+\centering
+\includegraphics[width=\linewidth]{IMAGE/Types_OEM.png}
+%\caption{Types d'ondes électromagnétiques}
+\label{fig:types_oem}
+\end{minipage}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.98\linewidth]{IMAGE/representation_oem_frequnce.png}
+    \caption{Schéma de représentation des ondes électromagnétiques en fonction de la longueur d'onde et de la fréquence}
+    \label{fig:representation_oem_frequnce}
+\end{figure}
+
+\subsection{Ondes hertziennes et bandes de fréquences}
+
+Les ondes hertziennes couvrent la gamme de fréquences allant de 0 à 300 GHz. Elles sont subdivisées en différentes bandes de fréquences comme présenté dans le tableau suivant :
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{Bande} & \textbf{Fréquence} & \textbf{Longueur d’onde} & \textbf{Applications} \\
+\hline
+ELF & 3 -- 30 Hz & 10 000 -- 100 000 km & Ondes naturelles, cerveau \\
+SLF & 30 -- 300 Hz & 1 000 -- 10 000 km & Lignes électriques \\
+ULF & 300 Hz -- 3 kHz & 100 -- 1 000 km & Télécommunications \\
+VLF & 3 -- 30 kHz & 10 -- 100 km & Navigation, CPL \\
+LF & 30 -- 300 kHz & 1 -- 10 km & Radiodiffusion \\
+MF & 300 kHz -- 3 MHz & 100 m -- 1 km & Radio AM \\
+HF & 3 -- 30 MHz & 10 -- 100 m & Communications radio \\
+VHF & 30 -- 300 MHz & 1 -- 10 m & FM, TV \\
+UHF & 300 MHz -- 3 GHz & 10 cm -- 1 m & Wi-Fi, 4G, 5G \\
+SHF & 3 -- 30 GHz & 1 -- 10 cm & Radar, satellite \\
+EHF & 30 -- 300 GHz & 1 mm -- 1 cm & 5G avancée, radar \\
+\hline
+\end{tabular}
+\caption{Bandes de fréquences des ondes hertziennes}
+\end{table}
+
+\subsection{Mesures en diagnostic électromagnétique}
+
+Dans le cadre des diagnostics électromagnétiques, les mesures concernent principalement les ondes hertziennes. Ces ondes incluent notamment :
+
+\begin{itemize}
+    \item les réseaux Wi-Fi ;
+    \item la téléphonie mobile (2G, 3G, 4G, 5G) ;
+    \item les micro-ondes ;
+    \item les lignes électriques.
+\end{itemize}
+
+\subsection{Rayonnements ionisants et non ionisants}
+
+Les ondes électromagnétiques peuvent être classées en deux catégories :
+
+\begin{itemize}
+    \item les rayonnements non ionisants (ondes radio, micro-ondes, infrarouge, visible) ;
+    \item les rayonnements ionisants (ultraviolets, rayons X, rayons $\gamma$).
+\end{itemize}
+
+Un rayonnement ionisant est capable d’arracher des électrons aux atomes, produisant ainsi des ions. Ce type de rayonnement peut être dangereux pour les organismes vivants à forte dose.
+
+La limite entre ces deux types de rayonnements se situe autour de $849$~THz.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{IMAGE/Rayonnement_non_ionisant.png}
+    \caption{Rayonnements ionisants et non- ionisants}
+    \label{fig:Rayonnement_non_ionisant}
+\end{figure}
+
+\subsection{Effets sur la santé}
+
+Selon l’Organisation Mondiale de la Santé (OMS), les ondes radiofréquences sont classées comme « potentiellement cancérogènes pour l’homme ». Certaines études suggèrent un lien entre une exposition prolongée (par exemple liée à l’usage intensif du téléphone portable) et certains risques pour la santé.
+
+Certaines personnes peuvent également présenter une sensibilité aux champs électromagnétiques (électrosensibilité), se manifestant par des symptômes tels que :
+
+\begin{itemize}
+    \item Maux de tête , troubles du sommeil , fatigue etc...
+\end{itemize}
+
+\section{Propagation des ondes électromagnétiques}
+
+La propagation des ondes électromagnétiques repose sur plusieurs phénomènes physiques tels que la réflexion, la réfraction, la diffraction, la diffusion et la dispersion. Ces phénomènes dépendent à la fois des bandes de fréquences utilisées et des propriétés physico-chimiques du milieu de propagation.
+
+\subsection{Grandeurs physiques fondamentales}
+
+Les principales grandeurs physiques intervenant dans la propagation des ondes électromagnétiques sont :
+
+\begin{itemize}
+    \item \textbf{Indice de réfraction ($n$)} : dépend de la permittivité ($\varepsilon$) et de la perméabilité ($\mu$) du milieu ;
+    
+    \item \textbf{Champ électrique ($\vec{E}$)} : généré par la présence de charges électriques, il est responsable de l'excitation des antennes filaires ;
+    
+    \item \textbf{Champ magnétique ($\vec{H}$)} : produit par le mouvement des charges électriques, il est associé à l'excitation des antennes cadre ;
+    
+    \item \textbf{Vecteur de Poynting ($\vec{S}$)} : défini comme le produit vectoriel des champs électrique et magnétique, il représente la densité de puissance surfacique :
+    
+    \begin{equation}
+    \vec{S} = \vec{E} \times \vec{H}
+    \end{equation}
+    
+    \item \textbf{Longueur d’onde ($\lambda$)} : liée à la fréquence et à la vitesse de propagation ;
+    
+    \item \textbf{Pertes en espace libre ($A_0$)} : caractérisent l’atténuation du signal en fonction de la distance et de la fréquence ;
+    
+    \item \textbf{Puissance Isotrope Rayonnée Équivalente (PIRE)} :
+    
+\end{itemize}
+
+\subsection{Équations de Maxwell}
+
+Les équations de Maxwell décrivent les relations fondamentales entre les champs électromagnétiques :
+
+\begin{align}
+\nabla \cdot \vec{E} &= \frac{\rho}{\varepsilon} \\
+\nabla \cdot \vec{B} &= 0 \\
+\nabla \times \vec{E} &= - \frac{\partial \vec{B}}{\partial t} \\
+\nabla \times \vec{H} &= \vec{J} + \frac{\partial \vec{D}}{\partial t}
+\end{align}
+
+\subsection{Vitesse de propagation}
+
+La vitesse de propagation d’une onde électromagnétique dans un milieu est donnée par :
+
+\begin{equation}
+v = \frac{c}{\sqrt{\varepsilon_r \mu_r}}
+\end{equation}
+
+où :
+\begin{itemize}
+    \item $c$ est la vitesse de la lumière dans le vide ;
+    \item $\varepsilon_r$ et $\mu_r$ sont respectivement la permittivité et la perméabilité relatives.
+\end{itemize}
+
+\subsection{Relation entre les champs électrique et magnétique}
+
+En champ lointain, les champs électrique et magnétique sont liés par l’impédance du vide :
+
+\begin{equation}
+\frac{E}{H} = Z_0 = 377 \ \Omega
+\end{equation}
+
+\subsection{Zones de propagation}
+
+On distingue trois régions autour d’une antenne :
+
+\begin{itemize}
+    \item \textbf{Champ proche (région I)} : les champs $\vec{E}$ et $\vec{H}$ doivent être mesurés simultanément ;
+    \item \textbf{Zone de transition (région II)} ;
+    \item \textbf{Champ lointain (région III)} : les champs sont perpendiculaires ($\vec{E} \perp \vec{H}$) et la relation $Z = Z_0$ est vérifiée.
+\end{itemize}
+
+\subsection{Débit d’absorption spécifique (DAS)}
+
+Le débit d’absorption spécifique (DAS) permet d’évaluer l’énergie absorbée par le corps humain exposé aux ondes électromagnétiques.
+
+Il est défini par :
+
+\begin{equation}
+DAS = \frac{\sigma E^2}{\rho}
+\end{equation}
+
+où :
+\begin{itemize}
+    \item $\sigma$ est la conductivité du milieu (S/m),
+    \item $\rho$ est la masse volumique (kg/m$^3$),
+    \item $E$ est le champ électrique (V/m).
+\end{itemize}
+
+Une autre expression du DAS est :
+
+\begin{equation}
+DAS = \frac{J^2}{\sigma \rho}
+\end{equation}
+
+où $J$ est la densité de courant (A/m$^2$).
+
+
+\subsection{Puissance isotrope rayonnée équivalente (PIRE)}
+
+La Puissance Isotrope Rayonnée Équivalente (PIRE) est définie comme le produit du gain de l’antenne d’émission ($G_e$) par la puissance injectée à son entrée ($P_e$) :
+
+\begin{equation}
+\text{PIRE} = G_e \cdot P_e
+\end{equation}
+
+La valeur théorique du champ électrique en champ lointain peut être estimée par la relation suivante :
