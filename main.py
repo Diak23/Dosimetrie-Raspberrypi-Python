@@ -2,16 +2,17 @@ from acquisition.capteur import lecture_capteur
 from processing.exposition import mesurer_exposition
 from processing.stockage import sauvegarder_mesure
 from interface.affichage import afficher_resume
+from config.config import SEUIL_EXPOSITION, DUREE_MESURE
 
 print("Démarrage du système TEMPO")
 
 valeur = lecture_capteur()
 
-if valeur > 3:
+if valeur > SEUIL_EXPOSITION:
     statut = "Exposition élevée"
 else:
     statut = "Niveau normal"
 
 afficher_resume(valeur, statut)
 sauvegarder_mesure(valeur, statut)
-mesurer_exposition(5)
+mesurer_exposition(DUREE_MESURE)
